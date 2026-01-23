@@ -84,7 +84,7 @@ public class SuperMovement : MonoBehaviour
 
             rb2D.linearVelocity = new Vector2(newSpeed, rb2D.linearVelocity.y);
         }
-    }
+    }  
     public void HandleJump()
     {
         if (jump.action.triggered && grounded)

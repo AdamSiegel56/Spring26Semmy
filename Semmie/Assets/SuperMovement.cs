@@ -18,6 +18,9 @@ public class SuperMovement : MonoBehaviour
 
     public GameObject rightAimReticle;
     public GameObject leftAimReticle;
+
+    public GameObject leftAimReticleLine;
+    public GameObject rightAimReticleLine;
     public float aimOffset;
 
     public float pushForce;
@@ -62,10 +65,10 @@ public class SuperMovement : MonoBehaviour
     {
         GetInput();
         CheckLanding();
+        CheckForReticleLine();
         LookWithReticle();
         Push();
         Pull();
-
     }
 
 
@@ -116,7 +119,6 @@ public class SuperMovement : MonoBehaviour
             canPull = false;
             leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
         }
-
 
 
     }
@@ -180,7 +182,26 @@ public class SuperMovement : MonoBehaviour
 
     }
     
+    public void CheckForReticleLine()
+    {
+        if (leftLookDirection == Vector2.zero)
+        {
+            leftAimReticleLine.GetComponent<SpriteRenderer>().enabled = false;
+        }
+        else
+        {
+            leftAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
+        }
 
+        if (rightLookDirection == Vector2.zero)
+        {
+            rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = false;
+        }
+        else
+        {
+            rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
+        }
+    }
     
     public void ApplyFriction()
     {

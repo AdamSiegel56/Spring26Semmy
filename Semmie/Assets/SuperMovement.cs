@@ -12,6 +12,7 @@ public class SuperMovement : MonoBehaviour
     public bool grounded;
     public BoxCollider2D groundCheck;
     public LayerMask layerCheck;
+    public LayerMask ignoreLayer;
     public GameObject landParticle;
 
     private bool canSpawnParticle;
@@ -21,6 +22,10 @@ public class SuperMovement : MonoBehaviour
 
     public GameObject leftAimReticleLine;
     public GameObject rightAimReticleLine;
+
+    public LineRenderer leftLR;
+    public LineRenderer rightLR;
+
     public float aimOffset;
 
     public float pushForce;
@@ -48,6 +53,10 @@ public class SuperMovement : MonoBehaviour
     public Color fullColor;
     public Color notColor;
 
+
+    public Color red;
+    public Color blue;
+
     [Header("Controls")]
     public InputActionReference move;
     public InputActionReference jump;
@@ -69,6 +78,7 @@ public class SuperMovement : MonoBehaviour
         LookWithReticle();
         Push();
         Pull();
+        //LineColorSet();
     }
 
 
@@ -77,6 +87,18 @@ public class SuperMovement : MonoBehaviour
         CheckGround();
         ApplyFriction();
         UpdateValues();
+    }
+
+    public void LineColorSet()
+    {
+        if (canPush)
+        {
+            rightLR.endColor = red;
+        }
+        else
+        {
+            rightLR.endColor = Color.white;
+        }
     }
 
     public void LookWithReticle()
@@ -89,11 +111,19 @@ public class SuperMovement : MonoBehaviour
         rightAimReticle.transform.rotation = Quaternion.Euler(0, 0, r1_angle - 90);
 
         RaycastHit2D rHit = Physics2D.Raycast(rightAimReticle.transform.position, rightLookDirection, pushMaxDistance, layerCheck);
+        RaycastHit2D rIgnore = Physics2D.Raycast(rightAimReticle.transform.position, rightLookDirection, pushMaxDistance, ignoreLayer);
+        
         Debug.DrawLine(rightAimReticle.transform.position, rHit.point);
-        if(rHit)
+
+        Debug.DrawLine(rightAimReticle.transform.position, rHit.point);
+        
+
+        if (rHit)
         {
             canPush = true;
             rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = fullColor;
+            rightLR.SetPosition(1, rHit.point);
+            rightLR.endColor = red;
         }
         else
         {
@@ -101,13 +131,29 @@ public class SuperMovement : MonoBehaviour
             rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
         }
 
-        //(left stick)
-        leftAimReticle.transform.localPosition = leftLookDirection * aimOffset;
+        if(rIgnore)
+        {
+            canPush = false;
+            rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
+            rightLR.SetPosition(1, rIgnore.point);
+            rightLR.endColor = notColor;
+        }
+
+
+        if(!rIgnore && !rHit)
+        {
+            rightLR.SetPosition(1, new Vector3(pushMaxDistance * rightLookDirection.x, pushMaxDistance * rightLookDirection.y, 0));
+            rightLR.endColor = Color.white;
+        }
+
+            //(left stick)
+            leftAimReticle.transform.localPosition = leftLookDirection * aimOffset;
         Vector2 r2_direction = leftAimReticle.transform.position - transform.position;
         float r2_angle = Mathf.Atan2(r2_direction.y, r2_direction.x) * Mathf.Rad2Deg;
         leftAimReticle.transform.rotation = Quaternion.Euler(0, 0, r2_angle - 90);
 
         RaycastHit2D lHit = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, layerCheck);
+        RaycastHit2D lIgnore = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, ignoreLayer);
         Debug.DrawLine(leftAimReticle.transform.position, lHit.point);
         if (lHit)
         {
@@ -119,7 +165,11 @@ public class SuperMovement : MonoBehaviour
             canPull = false;
             leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
         }
-
+        if (lIgnore)
+        {
+            canPull = false;
+            leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
+        }
 
     }
     public void Push()
@@ -190,16 +240,20 @@ public class SuperMovement : MonoBehaviour
         }
         else
         {
-            leftAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
+            //leftAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
+            
         }
 
         if (rightLookDirection == Vector2.zero)
         {
             rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = false;
+            rightLR.SetPosition(1, rightAimReticle.transform.position);
+            rightLR.SetPosition(0, rightAimReticle.transform.position);
         }
         else
         {
-            rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
+            //rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
+            rightLR.SetPosition(0, rightAimReticle.transform.position);
         }
     }
     

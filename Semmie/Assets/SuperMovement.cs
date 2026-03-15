@@ -20,8 +20,7 @@ public class SuperMovement : MonoBehaviour
     public GameObject rightAimReticle;
     public GameObject leftAimReticle;
 
-    public GameObject leftAimReticleLine;
-    public GameObject rightAimReticleLine;
+    
 
     public LineRenderer leftLR;
     public LineRenderer rightLR;
@@ -39,6 +38,7 @@ public class SuperMovement : MonoBehaviour
 
     [Header("PushPull")]
     public bool canPush;
+    public bool pushLocked;
     public float pushCurrReload;
     public float pushReloadNeeded;
     public float pushReloadSpeed;
@@ -64,6 +64,16 @@ public class SuperMovement : MonoBehaviour
     public InputActionReference push;
     public InputActionReference pull;
 
+
+    private void OnEnable()
+    {
+        EventBus<LockPushEvent>.OnEvent += LockPush;
+    }
+    private void OnDisable()
+    {
+        EventBus<LockPushEvent>.OnEvent -= LockPush;
+    }
+
     void Start()
     {
         rb2D = GetComponent<Rigidbody2D>();
@@ -74,10 +84,13 @@ public class SuperMovement : MonoBehaviour
     {
         GetInput();
         CheckLanding();
-        CheckForReticleLine();
         LookWithReticle();
-        Push();
+        if(!pushLocked)
+        {
+            Push();
+        }
         Pull();
+        CheckForReticleLine();
         //LineColorSet();
     }
 
@@ -142,12 +155,12 @@ public class SuperMovement : MonoBehaviour
 
         if(!rIgnore && !rHit)
         {
-            rightLR.SetPosition(1, new Vector3(pushMaxDistance * rightLookDirection.x, pushMaxDistance * rightLookDirection.y, 0));
+            rightLR.SetPosition(1, rightAimReticle.transform.position + new Vector3(pushMaxDistance * rightLookDirection.x, pushMaxDistance * rightLookDirection.y, 0));
             rightLR.endColor = Color.white;
         }
 
-            //(left stick)
-            leftAimReticle.transform.localPosition = leftLookDirection * aimOffset;
+        //(left stick)
+        leftAimReticle.transform.localPosition = leftLookDirection * aimOffset;
         Vector2 r2_direction = leftAimReticle.transform.position - transform.position;
         float r2_angle = Mathf.Atan2(r2_direction.y, r2_direction.x) * Mathf.Rad2Deg;
         leftAimReticle.transform.rotation = Quaternion.Euler(0, 0, r2_angle - 90);
@@ -159,6 +172,8 @@ public class SuperMovement : MonoBehaviour
         {
             canPull = true;
             leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = fullColor;
+            leftLR.SetPosition(1, lHit.point);
+            leftLR.endColor = blue;
         }
         else
         {
@@ -169,29 +184,48 @@ public class SuperMovement : MonoBehaviour
         {
             canPull = false;
             leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
+            leftLR.SetPosition(1, lIgnore.point);
+            leftLR.endColor = notColor;
+        }
+
+        if (!lIgnore && !lHit)
+        {
+            leftLR.SetPosition(1, leftAimReticle.transform.position + new Vector3(pullMaxDistance * leftLookDirection.x, pullMaxDistance * leftLookDirection.y, 0));
+            leftLR.endColor = Color.white;
         }
 
     }
+    private Tween PushRotateTween;
     public void Push()
     {
         if (push.action.triggered && pushCurrReload >= pushReloadNeeded && canPush)
         {
             pushCurrReload = 0f;
+
             Vector2 aimingDirection;
             aimingDirection = -(rightAimReticle.transform.position - gameObject.transform.position).normalized;
 
-            rightAimReticle.transform.GetChild(0).transform.DOLocalRotate(new Vector3(0, 0, 360), pushReloadSpeed, RotateMode.FastBeyond360);
+            PushRotateTween?.Kill();
+            rightAimReticle.transform.GetChild(0).transform.localRotation = Quaternion.identity;
+            PushRotateTween = rightAimReticle.transform.GetChild(0).transform.DOLocalRotate(new Vector3(0, 0, 360), pushReloadSpeed, RotateMode.FastBeyond360);
+
             rb2D.AddForce(aimingDirection * pushForce, ForceMode2D.Impulse);
         }
     }
+    private Tween PullRotateTween;
     public void Pull()
     {
         if (pull.action.triggered && pullCurrReload >= pullReloadNeeded && canPull)
         {
+            pullCurrReload = 0f;
+
             Vector2 aimingDirection;
             aimingDirection = (leftAimReticle.transform.position - gameObject.transform.position).normalized;
 
-            leftAimReticle.transform.GetChild(0).transform.DOLocalRotate(new Vector3(0, 0, 360), pullReloadSpeed, RotateMode.FastBeyond360);
+            PullRotateTween?.Kill();
+            leftAimReticle.transform.GetChild(0).transform.localRotation = Quaternion.identity;
+            PullRotateTween = leftAimReticle.transform.GetChild(0).transform.DOLocalRotate(new Vector3(0, 0, 360), pullReloadSpeed, RotateMode.FastBeyond360);
+
             rb2D.AddForce(aimingDirection * pushForce, ForceMode2D.Impulse);
         }
     }
@@ -236,23 +270,23 @@ public class SuperMovement : MonoBehaviour
     {
         if (leftLookDirection == Vector2.zero)
         {
-            leftAimReticleLine.GetComponent<SpriteRenderer>().enabled = false;
+            leftLR.SetPosition(1, leftAimReticle.transform.position);
+            leftLR.SetPosition(0, leftAimReticle.transform.position);
         }
         else
         {
-            //leftAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
-            
+            leftLR.SetPosition(0, leftAimReticle.transform.position);
         }
 
         if (rightLookDirection == Vector2.zero)
         {
-            rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = false;
+            Debug.Log("VECZERO");
+            
             rightLR.SetPosition(1, rightAimReticle.transform.position);
             rightLR.SetPosition(0, rightAimReticle.transform.position);
         }
         else
         {
-            //rightAimReticleLine.GetComponent<SpriteRenderer>().enabled = true;
             rightLR.SetPosition(0, rightAimReticle.transform.position);
         }
     }
@@ -265,36 +299,12 @@ public class SuperMovement : MonoBehaviour
         }
     }
     
+    //Lock Push, Lock Pull
 
-
-
-    //Old code. Used to have player movement
-    /*public void MoveWithInput()
+    public void LockPush(LockPushEvent evt)
     {
-        if(!grounded && Mathf.Abs(_moveDirection.x) > 0)
-        {
-            rb2D.linearVelocity = new Vector2(_moveDirection.x*airSpeed, rb2D.linearVelocity.y);
-        }
-        else if(!grounded && Mathf.Abs(_moveDirection.x) == 0)
-        {
-            //rb2D.linearVelocity = new Vector2(0f, rb2D.linearVelocity.y);
-        }
+        pushLocked = true;
+    }
 
-        if (Mathf.Abs(_moveDirection.x) > 0)
-        {
-            float increment = _moveDirection.x * acceleration;
-            float newSpeed = Mathf.Clamp(rb2D.linearVelocity.x + increment, -speed, speed);
 
-            rb2D.linearVelocity = new Vector2(newSpeed, rb2D.linearVelocity.y);
-        }
-    }  
-*/
-    /* public void HandleJump()
-    {
-        if (jump.action.triggered && grounded)
-        {
-            Debug.Log("JUMP TRY");
-            rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, jumpSpeed);
-        }
-    }*/
 }

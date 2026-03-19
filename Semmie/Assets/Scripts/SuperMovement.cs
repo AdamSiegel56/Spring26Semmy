@@ -6,6 +6,8 @@ public class SuperMovement : MonoBehaviour
 {
     private Rigidbody2D rb2D;
 
+    private bool canMove;
+
     private Vector2 _moveDirection;
     private Vector2 rightLookDirection;
     private Vector2 leftLookDirection;
@@ -20,7 +22,8 @@ public class SuperMovement : MonoBehaviour
     public GameObject rightAimReticle;
     public GameObject leftAimReticle;
 
-    
+    public GameObject LockL;
+    public GameObject LockR;
 
     public LineRenderer leftLR;
     public LineRenderer rightLR;
@@ -45,6 +48,7 @@ public class SuperMovement : MonoBehaviour
     public float pushMaxDistance;
 
     public bool canPull;
+    public bool pullLocked;
     public float pullCurrReload;
     public float pullReloadNeeded;
     public float pullReloadSpeed;
@@ -68,29 +72,45 @@ public class SuperMovement : MonoBehaviour
     private void OnEnable()
     {
         EventBus<LockPushEvent>.OnEvent += LockPush;
+        EventBus<LockPullEvent>.OnEvent += LockPull;
+        EventBus<OnDeathEvent>.OnEvent += LockMovementDeath;
+        EventBus<OnReviveEvent>.OnEvent += RespawnEvent;
     }
     private void OnDisable()
     {
         EventBus<LockPushEvent>.OnEvent -= LockPush;
+        EventBus<LockPullEvent>.OnEvent -= LockPull;
+        EventBus<OnDeathEvent>.OnEvent -= LockMovementDeath;
+        EventBus<OnReviveEvent>.OnEvent -= RespawnEvent;
     }
 
     void Start()
     {
+
+        //EventBus<LockPullEvent>.Raise(new LockPullEvent());
+        canMove = true;
         rb2D = GetComponent<Rigidbody2D>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (!canMove) { return; }
         GetInput();
         CheckLanding();
-        LookWithReticle();
+        
         if(!pushLocked)
         {
+            Right_CheckForReticleLine();
+            Right_LookWithReticle();
             Push();
         }
-        Pull();
-        CheckForReticleLine();
+        if (!pullLocked)
+        {
+            Left_CheckForReticleLine();
+            Left_LookWithReticle();
+            Pull();
+        }
         //LineColorSet();
     }
 
@@ -114,7 +134,15 @@ public class SuperMovement : MonoBehaviour
         }
     }
 
-    public void LookWithReticle()
+    public void LockMovementDeath(OnDeathEvent evt)
+    {
+        canMove = false;
+    }
+    public void RespawnEvent(OnReviveEvent evt)
+    {
+        canMove = true;
+    }
+    public void Right_LookWithReticle()
     {
         //Aims reticle in direction, and rotates it away from player
         //(right stick)
@@ -131,20 +159,33 @@ public class SuperMovement : MonoBehaviour
         Debug.DrawLine(rightAimReticle.transform.position, rHit.point);
         
 
-        if (rHit)
+        if(rIgnore && rHit)
+        {
+            if(rIgnore.distance < rHit.distance)
+            {
+                canPush = false;
+                rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
+                rightLR.SetPosition(1, rIgnore.point);
+                rightLR.endColor = notColor;
+
+            }
+            else
+            {
+                canPush = true;
+                rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = fullColor;
+                rightLR.SetPosition(1, rHit.point);
+                rightLR.endColor = red;
+            }
+        }
+
+        else if (rHit)
         {
             canPush = true;
             rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = fullColor;
             rightLR.SetPosition(1, rHit.point);
             rightLR.endColor = red;
         }
-        else
-        {
-            canPush = false;
-            rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
-        }
-
-        if(rIgnore)
+        else if (rIgnore)
         {
             canPush = false;
             rightAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
@@ -152,13 +193,18 @@ public class SuperMovement : MonoBehaviour
             rightLR.endColor = notColor;
         }
 
-
-        if(!rIgnore && !rHit)
+        else
         {
+            canPush = false;
             rightLR.SetPosition(1, rightAimReticle.transform.position + new Vector3(pushMaxDistance * rightLookDirection.x, pushMaxDistance * rightLookDirection.y, 0));
             rightLR.endColor = Color.white;
         }
 
+        
+
+    }
+    public void Left_LookWithReticle()
+    {
         //(left stick)
         leftAimReticle.transform.localPosition = leftLookDirection * aimOffset;
         Vector2 r2_direction = leftAimReticle.transform.position - transform.position;
@@ -168,19 +214,34 @@ public class SuperMovement : MonoBehaviour
         RaycastHit2D lHit = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, layerCheck);
         RaycastHit2D lIgnore = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, ignoreLayer);
         Debug.DrawLine(leftAimReticle.transform.position, lHit.point);
-        if (lHit)
+
+        if (lIgnore && lHit)
+        {
+            if (lIgnore.distance < lHit.distance)
+            {
+                canPull = false;
+                leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
+                leftLR.SetPosition(1, lIgnore.point);
+                leftLR.endColor = notColor;
+
+            }
+            else
+            {
+                canPull = true;
+                leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = fullColor;
+                leftLR.SetPosition(1, lHit.point);
+                leftLR.endColor = red;
+            }
+        }
+        else if (lHit)
         {
             canPull = true;
             leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = fullColor;
             leftLR.SetPosition(1, lHit.point);
             leftLR.endColor = blue;
         }
-        else
-        {
-            canPull = false;
-            leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
-        }
-        if (lIgnore)
+
+        else if (lIgnore)
         {
             canPull = false;
             leftAimReticle.transform.GetComponentInChildren<SpriteRenderer>().color = notColor;
@@ -188,12 +249,12 @@ public class SuperMovement : MonoBehaviour
             leftLR.endColor = notColor;
         }
 
-        if (!lIgnore && !lHit)
+        else
         {
+            canPull = false;
             leftLR.SetPosition(1, leftAimReticle.transform.position + new Vector3(pullMaxDistance * leftLookDirection.x, pullMaxDistance * leftLookDirection.y, 0));
             leftLR.endColor = Color.white;
         }
-
     }
     private Tween PushRotateTween;
     public void Push()
@@ -266,31 +327,35 @@ public class SuperMovement : MonoBehaviour
 
     }
     
-    public void CheckForReticleLine()
+    public void Right_CheckForReticleLine()
     {
-        if (leftLookDirection == Vector2.zero)
-        {
-            leftLR.SetPosition(1, leftAimReticle.transform.position);
-            leftLR.SetPosition(0, leftAimReticle.transform.position);
-        }
-        else
-        {
-            leftLR.SetPosition(0, leftAimReticle.transform.position);
-        }
-
         if (rightLookDirection == Vector2.zero)
         {
             Debug.Log("VECZERO");
-            
+            rightAimReticle.gameObject.SetActive(false);
             rightLR.SetPosition(1, rightAimReticle.transform.position);
             rightLR.SetPosition(0, rightAimReticle.transform.position);
         }
         else
         {
+            rightAimReticle.gameObject.SetActive(true);
             rightLR.SetPosition(0, rightAimReticle.transform.position);
         }
     }
-    
+    public void Left_CheckForReticleLine()
+    {
+        if (leftLookDirection == Vector2.zero)
+        {
+            leftAimReticle.gameObject.SetActive(false);
+            leftLR.SetPosition(1, leftAimReticle.transform.position);
+            leftLR.SetPosition(0, leftAimReticle.transform.position);
+        }
+        else
+        {
+            leftAimReticle.gameObject.SetActive(true);
+            leftLR.SetPosition(0, leftAimReticle.transform.position);
+        }
+    }
     public void ApplyFriction()
     {
         if (grounded && (Mathf.Abs(_moveDirection.x) == 0))
@@ -303,8 +368,28 @@ public class SuperMovement : MonoBehaviour
 
     public void LockPush(LockPushEvent evt)
     {
-        pushLocked = true;
+        pushLocked = !pushLocked; CheckLocks();
     }
-
+    public void LockPull(LockPullEvent evt)
+    {
+        pullLocked = !pullLocked; CheckLocks();
+    }
+    public void CheckLocks()
+    {
+        LockR.gameObject.SetActive(pushLocked);
+        LockL.gameObject.SetActive(pullLocked);
+        if (pushLocked)
+        {
+            rightAimReticle.gameObject.SetActive(false);
+            rightLR.SetPosition(1, rightAimReticle.transform.position);
+            rightLR.SetPosition(0, rightAimReticle.transform.position);
+        }
+        if(pullLocked)
+        {
+            leftAimReticle.gameObject.SetActive(false);
+            leftLR.SetPosition(1, leftAimReticle.transform.position);
+            leftLR.SetPosition(0, leftAimReticle.transform.position);
+        }
+    }
 
 }

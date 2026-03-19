@@ -16,4 +16,10 @@ public static class EventBus<T> where T : IGameEvent
 }
 
 public struct LockPushEvent : IGameEvent { }
+public struct LockPullEvent : IGameEvent { }
+public struct OnDamageEvent : IGameEvent { }
+public struct OnDeathEvent : IGameEvent { }
+public struct OnReviveEvent : IGameEvent { }
+public struct OnCoinPickup : IGameEvent{ public int coinNum; }
+public struct AllCoinsAquired: IGameEvent{  }
 

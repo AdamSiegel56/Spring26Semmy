@@ -14,13 +14,24 @@ public class SpikeScript : MonoBehaviour
         
     }
 
+    public int damageAmount;
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if(collision.gameObject.tag != "Player") { return; }
         Debug.Log("AA");
         PlayerManager playerRef = collision.gameObject.GetComponent<PlayerManager>();
 
-        playerRef.TakeDamage(1);
+        playerRef.TakeDamage(damageAmount);
 
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag != "Player") { return; }
+        Debug.Log("AA");
+        PlayerManager playerRef = collision.gameObject.GetComponent<PlayerManager>();
+
+        playerRef.TakeDamage(damageAmount);
     }
 }

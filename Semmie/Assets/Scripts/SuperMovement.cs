@@ -13,7 +13,9 @@ public class SuperMovement : MonoBehaviour
     private Vector2 leftLookDirection;
     public bool grounded;
     public BoxCollider2D groundCheck;
-    public LayerMask layerCheck;
+    public LayerMask groundLayer;
+    public LayerMask redLayer;
+    public LayerMask blueLayer;
     public LayerMask ignoreLayer;
     public GameObject landParticle;
 
@@ -30,8 +32,6 @@ public class SuperMovement : MonoBehaviour
 
     public float aimOffset;
 
-    public float pushForce;
-
     [Header("Values")]
     public float acceleration;
     public float speed;
@@ -42,6 +42,9 @@ public class SuperMovement : MonoBehaviour
     [Header("PushPull")]
     public bool canPush;
     public bool pushLocked;
+    public float divider;
+    public float pushForce;
+    
     public float pushCurrReload;
     public float pushReloadNeeded;
     public float pushReloadSpeed;
@@ -49,6 +52,9 @@ public class SuperMovement : MonoBehaviour
 
     public bool canPull;
     public bool pullLocked;
+
+    public float pullForce;
+
     public float pullCurrReload;
     public float pullReloadNeeded;
     public float pullReloadSpeed;
@@ -151,7 +157,7 @@ public class SuperMovement : MonoBehaviour
         float r1_angle = Mathf.Atan2(r1_direction.y, r1_direction.x) * Mathf.Rad2Deg;
         rightAimReticle.transform.rotation = Quaternion.Euler(0, 0, r1_angle - 90);
 
-        RaycastHit2D rHit = Physics2D.Raycast(rightAimReticle.transform.position, rightLookDirection, pushMaxDistance, layerCheck);
+        RaycastHit2D rHit = Physics2D.Raycast(rightAimReticle.transform.position, rightLookDirection, pushMaxDistance, redLayer);
         RaycastHit2D rIgnore = Physics2D.Raycast(rightAimReticle.transform.position, rightLookDirection, pushMaxDistance, ignoreLayer);
         
         Debug.DrawLine(rightAimReticle.transform.position, rHit.point);
@@ -211,7 +217,7 @@ public class SuperMovement : MonoBehaviour
         float r2_angle = Mathf.Atan2(r2_direction.y, r2_direction.x) * Mathf.Rad2Deg;
         leftAimReticle.transform.rotation = Quaternion.Euler(0, 0, r2_angle - 90);
 
-        RaycastHit2D lHit = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, layerCheck);
+        RaycastHit2D lHit = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, blueLayer);
         RaycastHit2D lIgnore = Physics2D.Raycast(leftAimReticle.transform.position, leftLookDirection, pullMaxDistance, ignoreLayer);
         Debug.DrawLine(leftAimReticle.transform.position, lHit.point);
 
@@ -270,6 +276,7 @@ public class SuperMovement : MonoBehaviour
             rightAimReticle.transform.GetChild(0).transform.localRotation = Quaternion.identity;
             PushRotateTween = rightAimReticle.transform.GetChild(0).transform.DOLocalRotate(new Vector3(0, 0, 360), pushReloadSpeed, RotateMode.FastBeyond360);
 
+            rb2D.linearVelocity = new Vector2(rb2D.linearVelocityX / divider, rb2D.linearVelocityY / divider);
             rb2D.AddForce(aimingDirection * pushForce, ForceMode2D.Impulse);
         }
     }
@@ -287,12 +294,13 @@ public class SuperMovement : MonoBehaviour
             leftAimReticle.transform.GetChild(0).transform.localRotation = Quaternion.identity;
             PullRotateTween = leftAimReticle.transform.GetChild(0).transform.DOLocalRotate(new Vector3(0, 0, 360), pullReloadSpeed, RotateMode.FastBeyond360);
 
-            rb2D.AddForce(aimingDirection * pushForce, ForceMode2D.Impulse);
+            rb2D.linearVelocity = new Vector2(rb2D.linearVelocityX / divider, rb2D.linearVelocityY / divider);
+            rb2D.AddForce(aimingDirection * pullForce, ForceMode2D.Impulse);
         }
     }
     public void CheckGround()
     {
-        grounded = Physics2D.OverlapAreaAll(groundCheck.bounds.min, groundCheck.bounds.max, layerCheck).Length > 0;
+        grounded = Physics2D.OverlapAreaAll(groundCheck.bounds.min, groundCheck.bounds.max, groundLayer).Length > 0;
     }
     public void CheckLanding()
     {

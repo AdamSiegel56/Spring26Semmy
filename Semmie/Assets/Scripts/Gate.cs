@@ -40,4 +40,20 @@ public class Gate : MonoBehaviour
                 break;
         }
     }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if(collision.tag != "Player") { return; }
+        switch (gate)
+        {
+            case GateType.LockPush:
+                EventBus<UnlockPushEvent>.Raise(new UnlockPushEvent());
+                break;
+            case GateType.LockPull:
+                EventBus<UnlockPullEvent>.Raise(new UnlockPullEvent());
+                break;
+        }
+    }
+
 }
+

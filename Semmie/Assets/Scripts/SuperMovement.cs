@@ -78,14 +78,21 @@ public class SuperMovement : MonoBehaviour
     private void OnEnable()
     {
         EventBus<LockPushEvent>.OnEvent += LockPush;
+        EventBus<UnlockPushEvent>.OnEvent += UnlockPush;
         EventBus<LockPullEvent>.OnEvent += LockPull;
+        EventBus<UnlockPullEvent>.OnEvent += UnlockPull;
+
         EventBus<OnDeathEvent>.OnEvent += LockMovementDeath;
         EventBus<OnReviveEvent>.OnEvent += RespawnEvent;
     }
     private void OnDisable()
     {
         EventBus<LockPushEvent>.OnEvent -= LockPush;
+        EventBus<UnlockPushEvent>.OnEvent -= UnlockPush;
+
         EventBus<LockPullEvent>.OnEvent -= LockPull;
+        EventBus<UnlockPullEvent>.OnEvent -= UnlockPull;
+
         EventBus<OnDeathEvent>.OnEvent -= LockMovementDeath;
         EventBus<OnReviveEvent>.OnEvent -= RespawnEvent;
     }
@@ -376,11 +383,20 @@ public class SuperMovement : MonoBehaviour
 
     public void LockPush(LockPushEvent evt)
     {
-        pushLocked = !pushLocked; CheckLocks();
+        pushLocked = true; CheckLocks();
     }
+    public void UnlockPush(UnlockPushEvent evt)
+    {
+        pushLocked = false; CheckLocks();
+    }
+
     public void LockPull(LockPullEvent evt)
     {
-        pullLocked = !pullLocked; CheckLocks();
+        pullLocked = true; CheckLocks();
+    }
+    public void UnlockPull(UnlockPullEvent evt)
+    {
+        pullLocked = false; CheckLocks();
     }
     public void CheckLocks()
     {

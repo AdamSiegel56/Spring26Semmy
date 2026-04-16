@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,7 +7,7 @@ public class HeartsScript : MonoBehaviour
     [SerializeField] GameObject[] heartObjects;
 
     public GameObject fullHeart;
-    public PlayerManager playerManagerRef;
+    private PlayerManager playerManagerRef;
     private void OnEnable()
     {
         
@@ -16,7 +17,6 @@ public class HeartsScript : MonoBehaviour
     {
         
     }
-
     public void UpdateHearts()
     {
         switch(playerManagerRef.currentHealth)
@@ -53,7 +53,7 @@ public class HeartsScript : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        playerManagerRef = PlayerManager.Instance;
     }
 
     // Update is called once per frame

@@ -1,6 +1,7 @@
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class SuperMovement : MonoBehaviour
 {
@@ -111,8 +112,8 @@ public class SuperMovement : MonoBehaviour
         if (!canMove) { return; }
         GetInput();
         CheckLanding();
-        
-        if(!pushLocked)
+        Reset();
+        if (!pushLocked)
         {
             Right_CheckForReticleLine();
             Right_LookWithReticle();
@@ -305,6 +306,15 @@ public class SuperMovement : MonoBehaviour
             rb2D.AddForce(aimingDirection * pullForce, ForceMode2D.Impulse);
         }
     }
+
+    public void Reset()
+    {
+        if(jump.action.triggered)
+        {
+            SceneManager.LoadScene("Level2");
+        }
+    }
+
     public void CheckGround()
     {
         grounded = Physics2D.OverlapAreaAll(groundCheck.bounds.min, groundCheck.bounds.max, groundLayer).Length > 0;

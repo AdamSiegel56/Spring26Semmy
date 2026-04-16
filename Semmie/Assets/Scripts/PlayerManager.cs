@@ -1,4 +1,5 @@
 using DG.Tweening;
+using DG.Tweening.Core.Easing;
 using System.Collections;
 using UnityEngine;
 
@@ -14,6 +15,11 @@ public class PlayerManager : MonoBehaviour
     private SpriteRenderer spriteRenderer;
 
     public Transform spawn;
+    public static PlayerManager Instance { get; private set; }
+    void Awake()
+    {
+        if (Instance == null) Instance = this;
+    }
 
     private void Start()
     {
@@ -21,7 +27,7 @@ public class PlayerManager : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         EventBus<OnCoinPickup>.OnEvent += PickupCoin;
     }
-
+    
     public void TakeDamage(int damage)
     {
         EventBus<OnDamageEvent>.Raise(new OnDamageEvent());
@@ -74,4 +80,12 @@ public class PlayerManager : MonoBehaviour
             EventBus<AllCoinsAquired>.Raise(new AllCoinsAquired());
         }
     }
+
+    public void SetSpawnToCheckpoint(Vector2 newPosition)
+    {
+        spawn.position = newPosition;
+    }
+
+
+
 }
